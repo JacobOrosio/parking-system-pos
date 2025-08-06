@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String          @id @default(uuid())
+  name      String
+  email     String          @unique
+  password  String
+  role      UserRole
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  logs      ParkingLog[]    @relation("CheckedOutLogs")
+  tickets   ParkingTicket[] @relation("IssuedTickets")
+}
+
+model ParkingTicket {
+  id           String      @id @default(uuid())
+  vehiclePlate String?
+  entryTime    DateTime    @default(now())
+  exitTime     DateTime?
+  totalFee     Float?
+  checkedOut   Boolean     @default(false)
+  issuedById   String
+  vehicleType  String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  log          ParkingLog?
+  issuedBy     User        @relation("IssuedTickets", fields: [issuedById], references: [id])
+}
+
+model ParkingLog {
+  id             String        @id @default(uuid())
+  ticketId       String        @unique
+  durationMins   Int
+  feeCharged     Float
+  checkedOutById String
+  createdAt      DateTime      @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  checkedOutBy   User          @relation("CheckedOutLogs", fields: [checkedOutById], references: [id])
+  ticket         ParkingTicket @relation(fields: [ticketId], references: [id])
+}
+
+model Rate {
+  id           String   @id @default(uuid())
+  label        String
+  baseRate     Float
+  gracePeriod  Int
+  extraPerHour Float
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
