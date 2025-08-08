@@ -50,7 +50,7 @@ export const SessionProvider: React.FC<React.PropsWithChildren> = (props) => {
         onSuccess(data) {
             setSession(JSON.stringify(data));
             queryClient.invalidateQueries({ queryKey: ['profile'] });
-            router.push('/(tabs)/generate');
+            router.replace('/(tabs)/generate');
         },
         onError(error) {
             setSignInError(error.message);

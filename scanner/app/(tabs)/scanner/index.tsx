@@ -16,6 +16,7 @@ import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import { payParking } from '@/api/mutations/parking';
 import { useSession } from '@/context/ctx';
+import { useDatabase } from '@/hooks/useDatabase';
 
 dayjs.extend(duration);
 
@@ -25,6 +26,8 @@ export default function TicketScanner() {
     const [isProgress, setIsProgress] = useState(false);
     const [scanned, setScanned] = useState(false);
     const [ticketId, setTicketId] = useState('');
+
+    const { addTransaction } = useDatabase();
 
     useEffect(() => {
         const requestPermission = async () => {
@@ -52,8 +55,14 @@ export default function TicketScanner() {
         mutationFn: payParking,
         onSuccess: async () => {
             console.log('Successfully pay ticket:');
+            try {
+                const totalFee = calculateFee();
+                await addTransaction(totalFee);
+                console.log(`Transaction saved locally: ₱${totalFee}`);
+            } catch (error) {
+                console.error('Failed to save transaction locally:', error);
+            }
             await handlePrintReceipt();
-            Alert.alert('Success', 'Successfully pay ticket');
             setScanned(false);
             setTicketId('');
             setIsProgress(false);
@@ -314,19 +323,6 @@ export default function TicketScanner() {
             {/* Scanning Frame */}
             {!scanned && !isProgress && (
                 <View className="absolute inset-0 justify-center items-center">
-                    <View className="w-64 h-64 relative">
-                        {/* Corner frames */}
-                        <View className="absolute top-0 left-0 w-12 h-12 border-l-4 border-t-4 border-orange-400 rounded-tl-xl" />
-                        <View className="absolute top-0 right-0 w-12 h-12 border-r-4 border-t-4 border-orange-400 rounded-tr-xl" />
-                        <View className="absolute bottom-0 left-0 w-12 h-12 border-l-4 border-b-4 border-orange-400 rounded-bl-xl" />
-                        <View className="absolute bottom-0 right-0 w-12 h-12 border-r-4 border-b-4 border-orange-400 rounded-br-xl" />
-
-                        {/* Center guide */}
-                        <View className="absolute inset-0 justify-center items-center">
-                            <View className="w-16 h-16 border-2 border-orange-400/50 rounded-lg" />
-                        </View>
-                    </View>
-
                     {/* Instructions */}
                     <View className="absolute bottom-32 left-6 right-6">
                         <View className="bg-black/70 rounded-2xl p-4">

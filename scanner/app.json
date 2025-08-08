@@ -11,7 +11,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "This app uses the camera to scan QR codes"
+        "NSCameraUsageDescription": "This app uses the camera to scan QR codes",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.jacoborosio.parkingsystem"
     },
@@ -42,7 +43,9 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-barcode-scanner"
+      "expo-barcode-scanner",
+      "expo-secure-store",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
@@ -52,9 +55,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "cde61c69-d0d9-4b59-95e6-7f53cc5fcea6"
+        "projectId": "dbca9196-3d66-41ae-9636-4d836409f7f5"
       }
     },
-    "owner": "jacoborosio"
+    "owner": "kobieko10"
   }
 }

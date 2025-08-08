@@ -17,6 +17,7 @@ import { useMutation } from '@tanstack/react-query';
 import { customerParking } from '@/api/mutations/parking';
 import { useSession } from '@/context/ctx';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useDatabase } from '@/hooks/useDatabase';
 
 export default function TicketGenerator() {
     const { user, signOut } = useSession();
@@ -26,6 +27,8 @@ export default function TicketGenerator() {
         { label: '🚗 Car', value: 'car' },
         { label: '🏍️ Motorcycle', value: 'motorcycle' },
     ];
+
+    const { clearTransactions, getTotalTransactions, requestLogoutWithPrint } = useDatabase();
 
     const createTicket = useMutation({
         mutationFn: customerParking,
@@ -123,6 +126,10 @@ export default function TicketGenerator() {
         }
     };
 
+    const handleLogout = async () => {
+        requestLogoutWithPrint(signOut);
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-gray-50">
             <View className="bg-white px-6 py-4 shadow-sm border-b border-gray-100">
@@ -132,7 +139,7 @@ export default function TicketGenerator() {
                         <Text className="text-sm text-gray-500">Ticket Generator</Text>
                     </View>
                     <TouchableOpacity
-                        onPress={signOut}
+                        onPress={() => handleLogout()}
                         className="bg-red-50 border border-red-200 px-4 py-2 rounded-lg">
                         <Text className="text-red-600 font-semibold">Logout</Text>
                     </TouchableOpacity>

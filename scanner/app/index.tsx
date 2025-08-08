@@ -1,12 +1,11 @@
-import { ViewLayout } from '@/components/view-layout';
-import Text from '@/components/themed-text';
-import { TouchableOpacity, Alert, StatusBar, SafeAreaView, View } from 'react-native';
+import { TouchableOpacity, Alert, StatusBar, SafeAreaView, View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Camera } from 'expo-camera';
-import { useSession } from '@/context/ctx';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import { useSession } from '@/context/ctx';
 
 export default function Index() {
     const router = useRouter();
@@ -172,7 +171,7 @@ export default function Index() {
                                     color: 'rgba(255, 255, 255, 0.7)',
                                     textAlign: 'center',
                                 }}>
-                                {user ? '👋 Welcome back!' : '✨ New here? Sign up to get started'}
+                                {user ? '👋 Welcome back!' : ''}
                             </Text>
                         </View>
                     </View>
