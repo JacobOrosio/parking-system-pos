@@ -22,26 +22,30 @@ import { useDatabase } from '@/hooks/useDatabase';
 export default function TicketGenerator() {
     const { user, signOut } = useSession();
     const [vehicleType, setVehicleType] = useState<'car' | 'motorcycle'>('car');
+    const [isPWD, setIsPWD] = useState(false);
     const [showValidation, setShowValidation] = useState(false);
     const vehicleTypeOptions = [
         { label: '🚗 Car', value: 'car' },
         { label: '🏍️ Motorcycle', value: 'motorcycle' },
     ];
 
-    const { clearTransactions, getTotalTransactions, requestLogoutWithPrint } = useDatabase();
+    const { requestLogoutWithPrint } = useDatabase();
 
     const createTicket = useMutation({
         mutationFn: customerParking,
         onSuccess: async (data) => {
             setShowValidation(false);
+            // Reset isPWD to false after successful ticket creation
+            setIsPWD(false);
             await handlePrintTicket(
                 data.ticket.id,
                 dayjs(data.ticket.entryTime).format('YYYY-MM-DD HH:mm:ss'),
             );
-            console.log('Successfully created ticket:', data.ticket.id);
         },
         onError: (error) => {
             console.error('Failed to create ticket:', error);
+            // Reset isPWD to false even on error
+            setIsPWD(false);
         },
     });
 
@@ -50,6 +54,7 @@ export default function TicketGenerator() {
         createTicket.mutate({
             issuedById: user.id,
             vehicleType,
+            isPWD,
         });
     };
 
@@ -84,17 +89,13 @@ export default function TicketGenerator() {
                 '\x1B\x61\x01' + // Center alignment
                 '================================\n' +
                 '\x1B\x21\x10' + // Double height text
-                'PARKING TICKET\n' +
+                'NOVAPARKING TICKET\n' +
                 '\x1B\x21\x00' + // Normal text
                 '================================\n' +
+                '\x1B\x61\x00' + // Left alignment
                 'Date: ' +
                 currentDate +
                 '\n' +
-                'Ticket ID: ' +
-                qrValue +
-                '\n' +
-                '================================\n' +
-                '\x1B\x61\x00' + // Left alignment
                 'Vehicle Type: ' +
                 vehicleTypeDisplay +
                 '\n' +
@@ -164,7 +165,7 @@ export default function TicketGenerator() {
                                 </Text>
                             </View>
 
-                            <View className="mb-8">
+                            <View className="mb-6">
                                 <Text className="text-base font-semibold text-gray-700 mb-3">
                                     Vehicle Type
                                 </Text>
@@ -193,6 +194,37 @@ export default function TicketGenerator() {
                                 </View>
                             </View>
 
+                            {/* PWD/Senior Button */}
+                            <View className="mb-8">
+                                <Text className="text-base font-semibold text-gray-700 mb-3">
+                                    Special Rate
+                                </Text>
+                                <TouchableOpacity
+                                    onPress={() => setIsPWD(!isPWD)}
+                                    className={`py-4 px-4 rounded-xl border-2 ${
+                                        isPWD
+                                            ? 'bg-blue-50 border-blue-400'
+                                            : 'bg-gray-50 border-gray-200'
+                                    }`}>
+                                    <View className="flex-row items-center justify-center">
+                                        <Text className="text-lg mr-2">♿</Text>
+                                        <Text
+                                            className={`font-semibold text-base ${
+                                                isPWD ? 'text-blue-700' : 'text-gray-600'
+                                            }`}>
+                                            PWD / Senior Citizen
+                                        </Text>
+                                        {isPWD && (
+                                            <View className="ml-2 w-5 h-5 bg-blue-500 rounded-full items-center justify-center">
+                                                <Text className="text-white text-xs font-bold">
+                                                    ✓
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+
                             <TouchableOpacity
                                 onPress={handleGenerateTicket}
                                 className={`py-4 rounded-xl items-center shadow-sm ${
@@ -211,6 +243,7 @@ export default function TicketGenerator() {
                             <View className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
                                 <Text className="text-blue-800 text-sm text-center font-medium">
                                     💡 Ticket will be generated with current timestamp
+                                    {isPWD && '\n🎯 PWD/Senior discount will be applied'}
                                 </Text>
                             </View>
                         </View>

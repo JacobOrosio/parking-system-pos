@@ -54,11 +54,9 @@ export default function TicketScanner() {
     const payTicket = useMutation({
         mutationFn: payParking,
         onSuccess: async () => {
-            console.log('Successfully pay ticket:');
             try {
                 const totalFee = calculateFee();
                 await addTransaction(totalFee);
-                console.log(`Transaction saved locally: ₱${totalFee}`);
             } catch (error) {
                 console.error('Failed to save transaction locally:', error);
             }
@@ -137,22 +135,36 @@ export default function TicketScanner() {
     const calculateFee = () => {
         if (!ticketData) return 0;
 
-        const { vehicleType, entryTime } = ticketData;
+        const { vehicleType, entryTime, isPWD } = ticketData;
         const { diffInMinutes } = getDuration(entryTime);
 
         const gracePeriod = 15;
+        const baseMinutes = 180;
 
         if (diffInMinutes <= gracePeriod) {
             return 0;
         }
 
-        if (vehicleType === 'Motorcycle') {
+        if (isPWD) {
+            if (diffInMinutes <= baseMinutes + gracePeriod) {
+                return 0;
+            }
+            const extraMinutes = diffInMinutes - baseMinutes;
+            const fullExtraHours = Math.floor(extraMinutes / 60);
+            const minutesIntoCurrentBlock = extraMinutes % 60;
+            let totalFee = fullExtraHours * 20; // extraHourRate
+            if (minutesIntoCurrentBlock >= gracePeriod) {
+                totalFee += 20; // extraHourRate
+            }
+            return totalFee;
+        }
+
+        if (vehicleType === 'motorcycle') {
             return 30;
         }
 
         const baseRate = 30;
         const extraHourRate = 20;
-        const baseMinutes = 180;
         const hoursInDay = 24;
         const minutesInDay = hoursInDay * 60;
         const dailyFee = 500;
@@ -165,7 +177,7 @@ export default function TicketScanner() {
             const minutesIntoCurrentBlock = extraMinutes % 60;
             let totalFee = fullDays * dailyFee;
             totalFee += fullExtraHours * extraHourRate;
-            if (minutesIntoCurrentBlock > gracePeriod) {
+            if (minutesIntoCurrentBlock >= gracePeriod) {
                 totalFee += extraHourRate;
             }
             return totalFee;
@@ -182,7 +194,7 @@ export default function TicketScanner() {
         let totalFee = baseRate;
         totalFee += fullExtraHours * extraHourRate;
 
-        if (minutesIntoCurrentBlock > gracePeriod) {
+        if (minutesIntoCurrentBlock >= gracePeriod) {
             totalFee += extraHourRate;
         }
 
@@ -320,7 +332,7 @@ export default function TicketScanner() {
     };
 
     const handleCloseModal = () => {
-        if (isProgress) return; // Prevent closing during progress
+        if (isProgress) return;
 
         setScanned(false);
         setTicketId('');
@@ -414,6 +426,21 @@ export default function TicketScanner() {
                                 </View>
                             ) : (
                                 <>
+                                    {/* PWD/Senior Indicator */}
+                                    {ticketData?.isPWD && (
+                                        <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                                            <View className="flex-row items-center justify-center">
+                                                <Text className="text-2xl mr-2">♿</Text>
+                                                <Text className="text-blue-800 font-bold text-lg">
+                                                    PWD / Senior Citizen
+                                                </Text>
+                                            </View>
+                                            <Text className="text-blue-700 text-center text-sm mt-1">
+                                                Special discount applied
+                                            </Text>
+                                        </View>
+                                    )}
+
                                     {/* Ticket Details Card */}
                                     <View className="bg-gray-50 rounded-xl p-4 mb-6">
                                         <View className="flex-row justify-between items-center mb-3">
@@ -447,9 +474,16 @@ export default function TicketScanner() {
                                                 <Text className="text-xl font-bold text-gray-900">
                                                     Total Fee
                                                 </Text>
-                                                <Text className="text-2xl font-bold text-orange-600">
-                                                    ₱{calculateFee().toFixed(2)}
-                                                </Text>
+                                                <View className="items-end">
+                                                    <Text className="text-2xl font-bold text-orange-600">
+                                                        ₱{calculateFee().toFixed(2)}
+                                                    </Text>
+                                                    {ticketData?.isPWD && calculateFee() === 0 && (
+                                                        <Text className="text-blue-600 text-sm font-medium">
+                                                            (PWD/Senior Discount)
+                                                        </Text>
+                                                    )}
+                                                </View>
                                             </View>
                                         </View>
                                     </View>

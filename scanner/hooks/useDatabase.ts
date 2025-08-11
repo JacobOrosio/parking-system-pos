@@ -74,25 +74,11 @@ export const useDatabase = () => {
         }
     };
 
-    // 🔹 Print before logout — styled like your handlePrintTicket
     const requestLogoutWithPrint = async (logoutFn: () => void) => {
         try {
-            const transactions = await getAllTransactions();
             const total = await getTotalTransactions();
 
-            if (transactions.length === 0) {
-                Alert.alert('No transactions to print.');
-                return;
-            }
-
-            // Create transaction list
-            let transactionLines = '';
-            transactions.forEach((t) => {
-                const time = dayjs(t.createdAt).format('h:mm:ss A');
-                transactionLines += `${time}  $${t.amount.toFixed(2)}\n`;
-            });
-
-            // ESC/POS text formatting
+            // ESC/POS text formatting - print total only
             const text =
                 '\x1B\x40' + // Initialize printer
                 '\x1B\x61\x01' + // Center alignment
@@ -105,21 +91,20 @@ export const useDatabase = () => {
                 dayjs().format('YYYY-MM-DD') +
                 '\n' +
                 '================================\n' +
-                '\x1B\x61\x00' + // Left align
-                transactionLines +
-                '--------------------------------\n' +
+                '\x1B\x61\x01' + // Center align for total
+                '\x1B\x21\x10' + // Double height for total
                 'TOTAL: $' +
                 total.toFixed(2) +
                 '\n' +
+                '\x1B\x21\x00' + // Reset text size
                 '================================\n' +
-                '\x1B\x61\x01' +
                 'End of Shift\n' +
                 '\x1D\x56\x41\x03'; // Cut paper
 
             // Send to RawBT
             await Linking.openURL('rawbt:' + encodeURIComponent(text));
 
-            // ✅ If we got here, printing succeeded → logout
+            // Clear transactions and logout
             await clearTransactions();
             logoutFn();
         } catch (error) {
@@ -127,7 +112,6 @@ export const useDatabase = () => {
             Alert.alert('Error', 'Printing failed. Logout cancelled.');
         }
     };
-
     return {
         loading,
         isDbInitialized,

@@ -3,6 +3,7 @@ import { prisma } from "../helpers/db.js";
 type CreateParkingTicketInput = {
   vehicleType: string;
   issuedById: string;
+  isPWD: boolean;
 };
 
 export const createParkingTicket = async (input: CreateParkingTicketInput) => {
@@ -10,6 +11,7 @@ export const createParkingTicket = async (input: CreateParkingTicketInput) => {
     data: {
       vehicleType: input.vehicleType,
       issuedById: input.issuedById,
+      isPWD: input.isPWD,
     },
   });
 };

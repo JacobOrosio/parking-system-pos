@@ -3,6 +3,7 @@ import api from '@/utils/api';
 type ParkingData = {
     issuedById: string;
     vehicleType: string;
+    isPWD: boolean;
 };
 
 export const customerParking = async (payload: ParkingData) => {
