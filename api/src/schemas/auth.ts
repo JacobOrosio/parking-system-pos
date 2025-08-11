@@ -25,3 +25,8 @@ export const signInSchema = z.object({
   email: z.string(),
   password: z.string().min(8),
 });
+
+export const updateStatusSchema = z.object({
+  id: z.string(),
+  status: z.enum(["active", "inactive"]),
+});
