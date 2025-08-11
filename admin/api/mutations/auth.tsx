@@ -31,6 +31,8 @@ interface SignUpPayload {
 
 export const signUp = async (payload: SignUpPayload) => {
   try {
+    console.log("create payload", payload);
+
     const response = await api.post("/auth/signup", payload);
     return response;
   } catch (error) {

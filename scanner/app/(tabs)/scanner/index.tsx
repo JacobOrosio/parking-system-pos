@@ -140,6 +140,12 @@ export default function TicketScanner() {
         const { vehicleType, entryTime } = ticketData;
         const { diffInMinutes } = getDuration(entryTime);
 
+        const gracePeriod = 15;
+
+        if (diffInMinutes <= gracePeriod) {
+            return 0;
+        }
+
         if (vehicleType === 'Motorcycle') {
             return 30;
         }
@@ -147,15 +153,40 @@ export default function TicketScanner() {
         const baseRate = 30;
         const extraHourRate = 20;
         const baseMinutes = 180;
+        const hoursInDay = 24;
+        const minutesInDay = hoursInDay * 60;
+        const dailyFee = 500;
+
+        const fullDays = Math.floor(diffInMinutes / minutesInDay);
+
+        if (fullDays >= 1) {
+            const extraMinutes = diffInMinutes - fullDays * minutesInDay;
+            const fullExtraHours = Math.floor(extraMinutes / 60);
+            const minutesIntoCurrentBlock = extraMinutes % 60;
+            let totalFee = fullDays * dailyFee;
+            totalFee += fullExtraHours * extraHourRate;
+            if (minutesIntoCurrentBlock > gracePeriod) {
+                totalFee += extraHourRate;
+            }
+            return totalFee;
+        }
 
         if (diffInMinutes <= baseMinutes) {
             return baseRate;
         }
 
         const extraMinutes = diffInMinutes - baseMinutes;
-        const extraHours = Math.ceil(extraMinutes / 60);
+        const fullExtraHours = Math.floor(extraMinutes / 60);
+        const minutesIntoCurrentBlock = extraMinutes % 60;
 
-        return baseRate + extraHours * extraHourRate;
+        let totalFee = baseRate;
+        totalFee += fullExtraHours * extraHourRate;
+
+        if (minutesIntoCurrentBlock > gracePeriod) {
+            totalFee += extraHourRate;
+        }
+
+        return totalFee;
     };
 
     const handlePrintReceipt = async () => {
@@ -274,9 +305,9 @@ export default function TicketScanner() {
     }
 
     const handlePayParking = () => {
-        if (isProgress) return; // Prevent multiple payment attempts
+        if (isProgress) return;
 
-        setIsProgress(true); // Set progress when starting payment
+        setIsProgress(true);
         const { diffInMinutes } = getDuration(ticketData.entryTime);
         const totalFee = calculateFee();
         if (!user) return null;
@@ -350,7 +381,6 @@ export default function TicketScanner() {
                 </View>
             )}
 
-            {/* Payment Modal */}
             <Modal
                 visible={scanned}
                 animationType="slide"
