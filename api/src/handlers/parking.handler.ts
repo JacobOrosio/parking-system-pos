@@ -3,10 +3,12 @@ import { zValidator } from "@hono/zod-validator";
 import {
   createParkingTicket,
   getParkingTicketById,
+  payFirstTicket,
   payParkingTicket,
 } from "../services/parking.service.js";
 import {
   createParkingTicketSchema,
+  payFirstParkingTicketSchema,
   payParkingTicketSchema,
 } from "../schemas/parking.js";
 import { authMiddleware } from "../helpers/middleware.js";
@@ -67,6 +69,21 @@ parking.post(
     try {
       const body = c.req.valid("json");
       const ticket = await payParkingTicket(body);
+      return c.json({ ticket }, 200);
+    } catch (error: any) {
+      console.error("Error in handler:", error);
+      return c.json({ error: error.message || "Internal server error" }, 500);
+    }
+  }
+);
+
+parking.post(
+  "/pay-first-parking",
+  zValidator("json", payFirstParkingTicketSchema),
+  async (c) => {
+    try {
+      const body = c.req.valid("json");
+      const ticket = await payFirstTicket(body);
       return c.json({ ticket }, 200);
     } catch (error: any) {
       console.error("Error in handler:", error);

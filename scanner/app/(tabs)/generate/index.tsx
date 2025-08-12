@@ -14,7 +14,7 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import dayjs from 'dayjs';
 import { useMutation } from '@tanstack/react-query';
-import { customerParking } from '@/api/mutations/parking';
+import { customerParking, payFirstParking } from '@/api/mutations/parking';
 import { useSession } from '@/context/ctx';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useDatabase } from '@/hooks/useDatabase';
@@ -29,13 +29,12 @@ export default function TicketGenerator() {
         { label: '🏍️ Motorcycle', value: 'motorcycle' },
     ];
 
-    const { requestLogoutWithPrint } = useDatabase();
+    const { requestLogoutWithPrint, addTransaction } = useDatabase();
 
     const createTicket = useMutation({
         mutationFn: customerParking,
         onSuccess: async (data) => {
             setShowValidation(false);
-            // Reset isPWD to false after successful ticket creation
             setIsPWD(false);
             await handlePrintTicket(
                 data.ticket.id,
@@ -49,12 +48,36 @@ export default function TicketGenerator() {
         },
     });
 
+    const createPaidTicket = useMutation({
+        mutationFn: payFirstParking,
+        onSuccess: async (data) => {
+            console.log(data.ticket.log.feeCharged);
+            await addTransaction(data.ticket.log.feeCharged);
+            await handlePrintReceipt();
+        },
+        onError: (error) => {
+            console.error('Failed to create ticket:', error);
+        },
+    });
+
     const handleGenerateTicket = () => {
         if (!user) return null;
         createTicket.mutate({
             issuedById: user.id,
             vehicleType,
             isPWD,
+        });
+    };
+
+    const handleGeneratePayFirstTicket = () => {
+        if (!user) return null;
+
+        const fee = isPWD ? 0 : 30;
+
+        createPaidTicket.mutate({
+            totalFee: fee,
+            isPWD,
+            issuedById: user.id,
         });
     };
 
@@ -127,6 +150,57 @@ export default function TicketGenerator() {
         }
     };
 
+    const handlePrintReceipt = async () => {
+        try {
+            const currentDate = new Date().toLocaleDateString();
+            const currentTime = new Date().toLocaleTimeString();
+            const vehicleIcon = '🏍️';
+            const entryTimeFormatted = dayjs().format('h:mm:ss A');
+            const exitTimeFormatted = dayjs().format('h:mm:ss A');
+            const totalFee = isPWD === true ? 0 : 30;
+
+            // Create the parking receipt text command
+            const text =
+                '\x1B\x40' + // Initialize printer
+                '\x1B\x61\x01' + // Center alignment
+                '================================\n' +
+                '\x1B\x21\x10' + // Double height text
+                'NOVAPARKING RECEIPT\n' +
+                '\x1B\x21\x00' + // Normal text
+                '================================\n' +
+                'Date: ' +
+                currentDate +
+                '\n' +
+                'Time: ' +
+                currentTime +
+                '\n' +
+                '================================\n' +
+                '\x1B\x61\x01' + // Center alignment
+                '\x1B\x21\x08' + // Double width text
+                'TOTAL AMOUNT\n' +
+                '\x1B\x21\x20' + // Double height and width
+                '₱' +
+                totalFee.toFixed(2) +
+                '\n' +
+                '\x1B\x21\x00' + // Normal text
+                '================================\n' +
+                '\x1B\x61\x01' + // Center alignment
+                'Thank you for parking with us!\n' +
+                'Please come again.\n' +
+                '\x1D\x56\x41\x03'; // Cut paper
+
+            // Send to RawBT
+            await Linking.openURL('rawbt:' + encodeURIComponent(text));
+            Alert.alert('Success', 'Receipt sent to RawBT for printing!');
+        } catch (error) {
+            console.error(error);
+            Alert.alert(
+                'Error',
+                'Failed to send print command. Ensure RawBT is installed and printer is paired.',
+            );
+        }
+    };
+
     const handleLogout = async () => {
         requestLogoutWithPrint(signOut);
     };
@@ -165,7 +239,7 @@ export default function TicketGenerator() {
                                 </Text>
                             </View>
 
-                            <View className="mb-6">
+                            <View className="mb-4">
                                 <Text className="text-base font-semibold text-gray-700 mb-3">
                                     Vehicle Type
                                 </Text>
@@ -194,8 +268,21 @@ export default function TicketGenerator() {
                                 </View>
                             </View>
 
+                            <View className="mb-4">
+                                <TouchableOpacity
+                                    onPress={handleGeneratePayFirstTicket}
+                                    className="py-4 px-4 rounded-xl border-2  border-gray-200">
+                                    <View className="flex-row items-center justify-center ">
+                                        <Text className="text-lg mr-2">🏍️</Text>
+                                        <Text className="font-semibold text-base text-gray-600">
+                                            Motorcycle Pay First
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
+
                             {/* PWD/Senior Button */}
-                            <View className="mb-8">
+                            <View className="mb-4">
                                 <Text className="text-base font-semibold text-gray-700 mb-3">
                                     Special Rate
                                 </Text>

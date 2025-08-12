@@ -64,3 +64,36 @@ export const payParkingTicket = async (input: PayParkingTicketInput) => {
     throw new Error("Failed to pay parking ticket");
   }
 };
+
+type PayFirstTicketInput = {
+  totalFee: number;
+  isPWD: boolean;
+  issuedById: string;
+};
+
+export const payFirstTicket = async (input: PayFirstTicketInput) => {
+  const exitTime = new Date();
+  const createParkingTicket = await prisma.parkingTicket.create({
+    data: {
+      vehicleType: "motorcycle",
+      issuedById: input.issuedById,
+      isPWD: input.isPWD,
+      totalFee: input.totalFee,
+      checkedOut: true,
+      exitTime,
+    },
+  });
+  const createParkingLog = await prisma.parkingLog.create({
+    data: {
+      ticketId: createParkingTicket.id,
+      durationMins: 0,
+      feeCharged: input.totalFee,
+      checkedOutById: input.issuedById,
+    },
+  });
+
+  return {
+    ticket: createParkingTicket,
+    log: createParkingLog,
+  };
+};

@@ -30,3 +30,18 @@ export const payParking = async (payload: PayParkingData) => {
         throw new Error((error as Error).message);
     }
 };
+
+type PayFirstParkingData = {
+    totalFee: number;
+    isPWD: boolean;
+    issuedById: string;
+};
+
+export const payFirstParking = async (payload: PayFirstParkingData) => {
+    try {
+        const response = await api.post('/api/v1/parking/pay-first-parking', payload);
+        return response.data;
+    } catch (error) {
+        throw new Error((error as Error).message);
+    }
+};

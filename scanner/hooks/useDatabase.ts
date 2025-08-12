@@ -93,7 +93,7 @@ export const useDatabase = () => {
                 '================================\n' +
                 '\x1B\x61\x01' + // Center align for total
                 '\x1B\x21\x10' + // Double height for total
-                'TOTAL: $' +
+                'TOTAL: ₱' +
                 total.toFixed(2) +
                 '\n' +
                 '\x1B\x21\x00' + // Reset text size

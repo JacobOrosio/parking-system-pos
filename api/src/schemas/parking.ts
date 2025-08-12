@@ -12,3 +12,9 @@ export const payParkingTicketSchema = z.object({
   durationMins: z.number(),
   checkedOutById: z.string(),
 });
+
+export const payFirstParkingTicketSchema = z.object({
+  totalFee: z.number(),
+  isPWD: z.boolean(),
+  issuedById: z.string(),
+});
