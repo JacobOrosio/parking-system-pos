@@ -71,7 +71,7 @@ export const getRevenueByFilter = async (
   if (filter === "week") {
     // Generate all 7 days of the week (Sunday to Saturday)
     const weekDays = eachDayOfInterval({ start: startDate, end: endDate });
-    const dayLabels = ["S", "M", "T", "W", "TH", "F", "S"];
+    const dayLabels = ["S", "M", "T", "W", "TH", "F", "SA"];
 
     chartData = weekDays.map((date, index) => {
       const dateKey = format(date, "yyyy-MM-dd");
@@ -128,4 +128,20 @@ export const getRevenueByFilter = async (
       endDate: format(endDate, "yyyy-MM-dd"),
     },
   };
+};
+
+type recordTransactionPayload = {
+  userId: string;
+  totalAmount: number;
+  schedule: string;
+};
+
+export const recordTransaction = async (input: recordTransactionPayload) => {
+  return await prisma.userTransactionSession.create({
+    data: {
+      userId: input.userId,
+      totalAmount: input.totalAmount,
+      sessionDate: input.schedule,
+    },
+  });
 };

@@ -18,3 +18,9 @@ export const payFirstParkingTicketSchema = z.object({
   isPWD: z.boolean(),
   issuedById: z.string(),
 });
+
+export const userTransactionSchema = z.object({
+  userId: z.string(),
+  totalAmount: z.number(),
+  schedule: z.string(),
+});

@@ -173,7 +173,10 @@ export default function UserStatus() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#f5f5f5" }}
+      className="mt-10"
+    >
       <View style={{ backgroundColor: "white", padding: 16, marginBottom: 8 }}>
         <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 4 }}>
           User Management

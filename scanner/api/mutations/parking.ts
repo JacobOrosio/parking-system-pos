@@ -45,3 +45,19 @@ export const payFirstParking = async (payload: PayFirstParkingData) => {
         throw new Error((error as Error).message);
     }
 };
+
+type UserTransactionData = {
+    userId: string;
+    totalAmount: number;
+    schedule: string;
+};
+
+export const userTransaction = async (payload: UserTransactionData) => {
+    try {
+        console.log(payload);
+        const response = await api.post('/api/v1/revenue/user-transaction', payload);
+        return response.data;
+    } catch (error) {
+        throw new Error((error as Error).message);
+    }
+};

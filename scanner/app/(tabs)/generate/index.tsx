@@ -14,7 +14,7 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import dayjs from 'dayjs';
 import { useMutation } from '@tanstack/react-query';
-import { customerParking, payFirstParking } from '@/api/mutations/parking';
+import { customerParking, payFirstParking, userTransaction } from '@/api/mutations/parking';
 import { useSession } from '@/context/ctx';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useDatabase } from '@/hooks/useDatabase';
@@ -29,7 +29,7 @@ export default function TicketGenerator() {
         { label: '🏍️ Motorcycle', value: 'motorcycle' },
     ];
 
-    const { requestLogoutWithPrint, addTransaction } = useDatabase();
+    const { requestLogoutWithPrint, addTransaction, getTotalTransactions } = useDatabase();
 
     const createTicket = useMutation({
         mutationFn: customerParking,
@@ -57,6 +57,16 @@ export default function TicketGenerator() {
         },
         onError: (error) => {
             console.error('Failed to create ticket:', error);
+        },
+    });
+
+    const createUserTransaction = useMutation({
+        mutationFn: userTransaction,
+        onSuccess: async (data) => {
+            await requestLogoutWithPrint(signOut);
+        },
+        onError: (error) => {
+            console.error('Failed to create user transaction:', error);
         },
     });
 
@@ -202,7 +212,19 @@ export default function TicketGenerator() {
     };
 
     const handleLogout = async () => {
-        requestLogoutWithPrint(signOut);
+        const total = await getTotalTransactions();
+        const currentDate = new Date().toISOString();
+
+        if (!user?.id) {
+            console.error('User ID is undefined');
+            return;
+        }
+
+        createUserTransaction.mutate({
+            userId: user.id,
+            totalAmount: total,
+            schedule: currentDate,
+        });
     };
 
     return (

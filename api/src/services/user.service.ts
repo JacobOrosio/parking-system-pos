@@ -55,3 +55,42 @@ export const updateUserStatus = async (
     throw new Error("Failed to update user status");
   }
 };
+
+export const userTransaction = async (
+  page: number = 1,
+  pageSize: number = 10
+) => {
+  const skip = (page - 1) * pageSize;
+
+  const [transactions, totalCount] = await Promise.all([
+    prisma.userTransactionSession.findMany({
+      skip,
+      take: pageSize,
+      orderBy: {
+        sessionDate: "desc",
+      },
+      select: {
+        id: true,
+        userId: true,
+        totalAmount: true,
+        sessionDate: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    }),
+    prisma.userTransactionSession.count(),
+  ]);
+
+  return {
+    data: transactions,
+    page,
+    pageSize,
+    totalPages: Math.ceil(totalCount / pageSize),
+    totalCount,
+  };
+};

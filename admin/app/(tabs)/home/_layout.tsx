@@ -9,7 +9,9 @@ const Dashboard = () => {
         screenOptions={{
           headerShown: false,
         }}
-      />
+      >
+        <Stack.Screen name="index" options={{ title: "Dashboard" }} />
+      </Stack>
       <CommonToast />
     </SafeAreaProvider>
   );

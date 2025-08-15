@@ -6,18 +6,22 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { useSession } from "@/context/ctx";
 import { useQuery } from "@tanstack/react-query";
-import { getRevenue } from "@/api/queries/revenue";
-import { LineChart } from "react-native-chart-kit";
+import { getRevenue, getUnpaidTickets } from "@/api/queries/revenue";
+import { BarChart, LineChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
 import { LogOut } from "lucide-react-native";
+import { useRouter } from "expo-router";
 
 const screenWidth = Dimensions.get("window").width;
 
 export default function Home() {
   const { signOut } = useSession();
+  const router = useRouter();
   const [filter, setFilter] = useState<"week" | "year">("week");
   const [timeOffset, setTimeOffset] = useState(0);
   const [isComponentMounted, setIsComponentMounted] = useState(false);
@@ -29,6 +33,11 @@ export default function Home() {
   } = useQuery({
     queryKey: ["revenue", filter, timeOffset],
     queryFn: () => getRevenue(filter, timeOffset),
+  });
+
+  const { data: unpaidTickets, isLoading: isUnpaidLoading } = useQuery({
+    queryKey: ["revenue"],
+    queryFn: () => getUnpaidTickets(),
   });
 
   useEffect(() => {
@@ -86,8 +95,16 @@ export default function Home() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <SafeAreaView className="flex-1 ">
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#6200EE"
+        translucent={false}
+      />
+      <ScrollView
+        className="flex-1 mt-10 bg-white"
+        showsVerticalScrollIndicator={false}
+      >
         <View className="flex flex-row justify-between items-center border-b-2 border-gray-200 p-4 ">
           <Text className="text-3xl font-extrabold">Dashboard</Text>
           <TouchableOpacity
@@ -100,26 +117,89 @@ export default function Home() {
         </View>
 
         <View className="h-full py-5 px-3">
-          <View className="flex flex-row mb-3 w-full h-28 justify-between gap-2 items-center">
-            <View className="w-[55%] -ml-1 flex-col justify-between bg-[#059669] rounded-xl border-gray-500 border h-full px-3 py-4">
-              <Text className="text-xl font-semibold text-white">Revenue</Text>
-              <Text className="text-2xl font-semibold text-white">
-                ₱{" "}
-                {totalRevenue.toLocaleString("en-PH", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </Text>
-              <Text className="text-sm text-white">{getTimeRangeLabel()}</Text>
+          <View className="flex flex-col">
+            <View className="flex flex-row mb-3 w-full h-28 justify-between gap-2 items-center">
+              {/* Revenue Card */}
+
+              <TouchableOpacity
+                onPress={() =>
+                  router.push("/(tabs)/home/components/user-transactions")
+                }
+                className="w-[55%] -ml-1 flex items-center justify-center bg-[#2563eb] rounded-xl border-gray-500 border h-full px-3 py-4"
+              >
+                <Text className="text-2xl font-semibold text-center text-white">
+                  Staff Transactions
+                </Text>
+              </TouchableOpacity>
+
+              {/* Parking Sessions Card */}
+              <View className="w-[45%] flex-col items-center bg-[#2563eb] rounded-xl border-gray-500 border h-full px-3 py-4">
+                <Text className="text-xl font-semibold text-white mb-2">
+                  Parking Sessions
+                </Text>
+                <Text className="text-3xl font-semibold text-white">
+                  {totalParking.toLocaleString("en-PH")}
+                </Text>
+              </View>
             </View>
 
-            <View className="w-[45%] flex-col items-center bg-[#2563eb] rounded-xl border-gray-500 border h-full px-3 py-4">
-              <Text className="text-xl font-semibold text-white mb-2">
-                Parking Sessions
-              </Text>
-              <Text className="text-3xl font-semibold text-white">
-                {totalParking.toLocaleString("en-PH")}
-              </Text>
+            <View className="flex flex-row mb-3 w-full h-28 justify-between gap-2 items-center">
+              {/* User Sessions Button */}
+              <TouchableOpacity
+                className="w-[55%] -ml-1 flex-col justify-between bg-[#059669] rounded-xl border-gray-500 border h-full px-3 py-4"
+                onPress={() =>
+                  router.push("/(tabs)/home/components/revenue-details")
+                }
+                activeOpacity={0.8}
+              >
+                {isLoading ? (
+                  <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator color="#FFF" size="small" />
+                  </View>
+                ) : (
+                  <>
+                    <Text className="text-xl font-semibold text-white">
+                      Revenue
+                    </Text>
+                    <Text className="text-2xl font-semibold text-white">
+                      ₱{" "}
+                      {totalRevenue.toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </Text>
+                    <Text className="text-sm text-white">
+                      {getTimeRangeLabel()}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {/* Unpaid Tickets */}
+              <TouchableOpacity
+                onPress={() =>
+                  router.push("/(tabs)/home/components/unpaid.tickets")
+                }
+                className="w-[45%] flex-col items-center bg-[#2563eb] rounded-xl border-gray-500 border h-full px-3 py-4"
+              >
+                {isUnpaidLoading ? (
+                  <View className="flex-1 justify-center items-center">
+                    <ActivityIndicator color="#FFF" size="small" />
+                  </View>
+                ) : (
+                  <>
+                    <Text className="text-xl font-semibold text-white mb-2">
+                      Unpaid Tickets
+                    </Text>
+                    <Text className="text-3xl font-semibold text-white">
+                      {unpaidTickets?.totalUnpaidTickets ?? 0}
+                    </Text>
+                    <Text className="text-sm text-white text-start">
+                      All unpaid tickets
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -157,15 +237,15 @@ export default function Home() {
               style={[
                 styles.navigationButton,
                 canGoBack()
-                  ? styles.navigationButtonEnabled
-                  : styles.navigationButtonDisabled,
+                  ? styles.navigationButtonActive
+                  : styles.navigationButtonInactive,
               ]}
             >
               <Text
                 style={
                   canGoBack()
-                    ? styles.navigationButtonTextEnabled
-                    : styles.navigationButtonTextDisabled
+                    ? styles.navigationButtonTextActive
+                    : styles.navigationButtonTextInactive
                 }
               >
                 ← Previous
@@ -184,15 +264,15 @@ export default function Home() {
               style={[
                 styles.navigationButton,
                 canGoForward()
-                  ? styles.navigationButtonEnabled
-                  : styles.navigationButtonDisabled,
+                  ? styles.navigationButtonActive
+                  : styles.navigationButtonInactive,
               ]}
             >
               <Text
                 style={
                   canGoForward()
-                    ? styles.navigationButtonTextEnabled
-                    : styles.navigationButtonTextDisabled
+                    ? styles.navigationButtonTextActive
+                    : styles.navigationButtonTextInactive
                 }
               >
                 Next →
@@ -207,7 +287,7 @@ export default function Home() {
 
             {dataPoints.length > 0 && dataPoints.some((val: any) => val > 0) ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <LineChart
+                <BarChart
                   data={{
                     labels,
                     datasets: [{ data: dataPoints }],
@@ -222,12 +302,6 @@ export default function Home() {
                     decimalPlaces: 2,
                     color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
                     labelColor: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
-                    propsForDots: {
-                      r: "6",
-                      strokeWidth: "3",
-                      stroke: "#10b981",
-                      fill: "#ffffff",
-                    },
                     propsForBackgroundLines: {
                       strokeWidth: 1,
                       stroke: "#e5e7eb",
@@ -238,7 +312,7 @@ export default function Home() {
                     borderRadius: 16,
                     marginRight: 16,
                   }}
-                  bezier
+                  showValuesOnTopOfBars
                 />
               </ScrollView>
             ) : (
@@ -261,102 +335,87 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   filterContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.6)",
-    padding: 8,
-    borderRadius: 16,
-    marginBottom: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 24,
+    padding: 4,
+    backgroundColor: "#F3F4F6", // Tailwind: bg-gray-100
+    borderRadius: 8,
   },
   filterRow: {
     flexDirection: "row",
-    justifyContent: "center",
   },
   filterButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginHorizontal: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
   },
   filterButtonActive: {
-    backgroundColor: "#1f2937",
+    backgroundColor: "#FFFFFF",
+    elevation: 1,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
   },
   filterButtonInactive: {
     backgroundColor: "transparent",
   },
   filterButtonTextActive: {
-    textAlign: "center",
-    fontWeight: "bold",
-    color: "#ffffff",
+    color: "#1F2937",
+    fontWeight: "500",
   },
   filterButtonTextInactive: {
-    textAlign: "center",
-    fontWeight: "bold",
-    color: "#6b7280",
+    color: "#6B7280",
+    fontWeight: "500",
   },
   navigationContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.6)",
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    padding: 4,
+    backgroundColor: "#F3F4F6", // Tailwind gray-100
+    borderRadius: 8,
   },
   navigationButton: {
+    flex: 1,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  navigationButtonEnabled: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  navigationButtonDisabled: {
-    backgroundColor: "#f3f4f6",
-  },
-  navigationButtonTextEnabled: {
-    fontWeight: "600",
-    color: "#1f2937",
-  },
-  navigationButtonTextDisabled: {
-    fontWeight: "600",
-    color: "#9ca3af",
-  },
-  currentPeriod: {
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
+  navigationButtonActive: {
+    backgroundColor: "#FFFFFF",
+    elevation: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  navigationButtonInactive: {
+    backgroundColor: "transparent",
+  },
+  navigationButtonTextActive: {
+    color: "#1F2937", // Tailwind gray-800
+    fontWeight: "500",
+  },
+  navigationButtonTextInactive: {
+    color: "#6B7280", // Tailwind gray-500
+    fontWeight: "500",
+  },
+  currentPeriod: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   currentPeriodText: {
-    color: "#1f2937",
-    fontWeight: "bold",
-    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827", // Tailwind gray-900
   },
+
   chartContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     padding: 24,
