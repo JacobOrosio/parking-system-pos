@@ -26,6 +26,7 @@ export default function TicketScanner() {
     const [isProgress, setIsProgress] = useState(false);
     const [scanned, setScanned] = useState(false);
     const [ticketId, setTicketId] = useState('');
+    const [isPWDDiscount, setIsPWDDiscount] = useState(false);
 
     const { addTransaction } = useDatabase();
 
@@ -64,6 +65,7 @@ export default function TicketScanner() {
             setScanned(false);
             setTicketId('');
             setIsProgress(false);
+            setIsPWDDiscount(false);
         },
         onError: (error) => {
             console.error('Failed to create ticket:', error);
@@ -78,7 +80,6 @@ export default function TicketScanner() {
                 .then((result) => {
                     const data = result.data;
 
-                    // Handle case where backend returns a message (invalid QR or already checked out)
                     if (data && data.message) {
                         Alert.alert('Notice', data.message);
                         setScanned(false);
@@ -87,7 +88,6 @@ export default function TicketScanner() {
                         return;
                     }
 
-                    // Handle case where no data is returned
                     if (!data) {
                         Alert.alert('Error', 'Invalid QR code');
                         setScanned(false);
@@ -96,7 +96,7 @@ export default function TicketScanner() {
                         return;
                     }
 
-                    // If we reach here, we have valid ticket data
+                    setIsPWDDiscount(data.isPWD || false);
                     setIsProgress(false);
                 })
                 .catch((error) => {
@@ -110,7 +110,6 @@ export default function TicketScanner() {
     }, [ticketId]);
 
     const handleBarCodeScanned = ({ data }: BarcodeScanningResult) => {
-        // Prevent scanning if already in progress or already scanned
         if (isProgress || scanned) {
             return;
         }
@@ -135,26 +134,26 @@ export default function TicketScanner() {
     const calculateFee = () => {
         if (!ticketData) return 0;
 
-        const { vehicleType, entryTime, isPWD } = ticketData;
+        const { vehicleType, entryTime } = ticketData;
         const { diffInMinutes } = getDuration(entryTime);
 
-        const gracePeriod = 15;
-        const baseMinutes = 180;
+        const gracePeriod = 15; // 15 minutes
+        const baseMinutes = 180; // 3 hours
 
         if (diffInMinutes <= gracePeriod) {
             return 0;
         }
 
-        if (isPWD) {
+        if (isPWDDiscount) {
             if (diffInMinutes <= baseMinutes + gracePeriod) {
                 return 0;
             }
-            const extraMinutes = diffInMinutes - baseMinutes;
+            const extraMinutes = diffInMinutes - (baseMinutes + gracePeriod);
             const fullExtraHours = Math.floor(extraMinutes / 60);
             const minutesIntoCurrentBlock = extraMinutes % 60;
-            let totalFee = fullExtraHours * 20; // extraHourRate
-            if (minutesIntoCurrentBlock >= gracePeriod) {
-                totalFee += 20; // extraHourRate
+            let totalFee = fullExtraHours * 20;
+            if (minutesIntoCurrentBlock > 0) {
+                totalFee += 20;
             }
             return totalFee;
         }
@@ -211,14 +210,13 @@ export default function TicketScanner() {
             const totalFee = calculateFee();
             const { durationText } = getDuration(ticketData.entryTime);
 
-            // Create the parking receipt text command
             const text =
-                '\x1B\x40' + // Initialize printer
-                '\x1B\x61\x01' + // Center alignment
+                '\x1B\x40' +
+                '\x1B\x61\x01' +
                 '================================\n' +
-                '\x1B\x21\x10' + // Double height text
+                '\x1B\x21\x10' +
                 'PARKING RECEIPT\n' +
-                '\x1B\x21\x00' + // Normal text
+                '\x1B\x21\x00' +
                 '================================\n' +
                 'Date: ' +
                 currentDate +
@@ -229,8 +227,9 @@ export default function TicketScanner() {
                 'Receipt ID: ' +
                 ticketId +
                 '\n' +
+                (isPWDDiscount ? 'Discount: PWD/Senior Citizen\n' : '') +
                 '================================\n' +
-                '\x1B\x61\x00' + // Left alignment
+                '\x1B\x61\x00' +
                 'Vehicle Type: ' +
                 vehicleIcon +
                 ' ' +
@@ -246,24 +245,23 @@ export default function TicketScanner() {
                 durationText +
                 '\n' +
                 '================================\n' +
-                '\x1B\x61\x01' + // Center alignment
-                '\x1B\x21\x08' + // Double width text
+                '\x1B\x61\x01' +
+                '\x1B\x21\x08' +
                 'TOTAL AMOUNT\n' +
-                '\x1B\x21\x20' + // Double height and width
+                '\x1B\x21\x20' +
                 '₱' +
                 totalFee.toFixed(2) +
                 '\n' +
-                '\x1B\x21\x00' + // Normal text
+                '\x1B\x21\x00' +
                 '================================\n' +
-                '\x1B\x61\x00' + // Left alignment
+                '\x1B\x61\x00' +
                 'Payment Status: PAID\n' +
                 'Payment Method: Cash\n' +
-                '\x1B\x61\x01' + // Center alignment
+                '\x1B\x61\x01' +
                 'Thank you for parking with us!\n' +
                 'Please come again.\n' +
-                '\x1D\x56\x41\x03'; // Cut paper
+                '\x1D\x56\x41\x03';
 
-            // Send to RawBT
             await Linking.openURL('rawbt:' + encodeURIComponent(text));
             Alert.alert('Success', 'Receipt sent to RawBT for printing!');
         } catch (error) {
@@ -337,11 +335,15 @@ export default function TicketScanner() {
         setScanned(false);
         setTicketId('');
         setIsProgress(false);
+        setIsPWDDiscount(false);
+    };
+
+    const togglePWDDiscount = () => {
+        setIsPWDDiscount(!isPWDDiscount);
     };
 
     return (
         <View className="flex-1 bg-gray-900">
-            {/* Header Overlay */}
             <SafeAreaView className="absolute top-0 left-0 right-0 z-10">
                 <View className="bg-black/50 px-6 py-4">
                     <View className="flex-row items-center justify-center">
@@ -363,10 +365,8 @@ export default function TicketScanner() {
                 barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
             />
 
-            {/* Scanning Frame */}
             {!scanned && !isProgress && (
                 <View className="absolute inset-0 justify-center items-center">
-                    {/* Instructions */}
                     <View className="absolute bottom-32 left-6 right-6">
                         <View className="bg-black/70 rounded-2xl p-4">
                             <Text className="text-white text-center font-semibold mb-1">
@@ -380,7 +380,6 @@ export default function TicketScanner() {
                 </View>
             )}
 
-            {/* Loading overlay while processing */}
             {isProgress && !scanned && (
                 <View className="absolute inset-0 bg-black/70 justify-center items-center">
                     <View className="bg-white rounded-2xl p-8 items-center shadow-xl">
@@ -400,7 +399,6 @@ export default function TicketScanner() {
                 onRequestClose={handleCloseModal}>
                 <View className="flex-1 justify-end bg-black/50">
                     <View className="bg-white rounded-t-3xl shadow-2xl">
-                        {/* Modal Header */}
                         <View className="bg-orange-50 px-6 py-4 rounded-t-3xl border-b border-orange-100">
                             <View className="flex-row items-center justify-center">
                                 <View className="w-8 h-8 bg-orange-500 rounded-full items-center justify-center mr-3">
@@ -426,22 +424,22 @@ export default function TicketScanner() {
                                 </View>
                             ) : (
                                 <>
-                                    {/* PWD/Senior Indicator */}
-                                    {ticketData?.isPWD && (
-                                        <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-                                            <View className="flex-row items-center justify-center">
-                                                <Text className="text-2xl mr-2">♿</Text>
-                                                <Text className="text-blue-800 font-bold text-lg">
-                                                    PWD / Senior Citizen
-                                                </Text>
-                                            </View>
-                                            <Text className="text-blue-700 text-center text-sm mt-1">
-                                                Special discount applied
-                                            </Text>
-                                        </View>
-                                    )}
+                                    <TouchableOpacity
+                                        onPress={togglePWDDiscount}
+                                        className={`mb-4 py-3 px-4 rounded-xl ${
+                                            isPWDDiscount ? 'bg-blue-500' : 'bg-blue-100'
+                                        } flex-row items-center justify-center`}>
+                                        <Text className="text-2xl mr-2">♿</Text>
+                                        <Text
+                                            className={`font-semibold ${
+                                                isPWDDiscount ? 'text-white' : 'text-blue-800'
+                                            }`}>
+                                            {isPWDDiscount
+                                                ? 'PWD/Senior Discount Applied'
+                                                : 'Apply PWD/Senior Discount'}
+                                        </Text>
+                                    </TouchableOpacity>
 
-                                    {/* Ticket Details Card */}
                                     <View className="bg-gray-50 rounded-xl p-4 mb-6">
                                         <View className="flex-row justify-between items-center mb-3">
                                             <Text className="text-gray-600 font-medium">
@@ -457,7 +455,7 @@ export default function TicketScanner() {
                                             </Text>
                                             <Text className="text-gray-900 font-mono text-sm">
                                                 {dayjs(ticketData?.entryTime).format(
-                                                    'MM/DD hh:mm A',
+                                                    'MM/DD hh:mm:ss A',
                                                 )}
                                             </Text>
                                         </View>
@@ -478,7 +476,7 @@ export default function TicketScanner() {
                                                     <Text className="text-2xl font-bold text-orange-600">
                                                         ₱{calculateFee().toFixed(2)}
                                                     </Text>
-                                                    {ticketData?.isPWD && calculateFee() === 0 && (
+                                                    {isPWDDiscount && calculateFee() === 0 && (
                                                         <Text className="text-blue-600 text-sm font-medium">
                                                             (PWD/Senior Discount)
                                                         </Text>
@@ -488,7 +486,6 @@ export default function TicketScanner() {
                                         </View>
                                     </View>
 
-                                    {/* Action Buttons */}
                                     <View className="flex-row gap-3">
                                         <TouchableOpacity
                                             onPress={handleCloseModal}
