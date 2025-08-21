@@ -5,6 +5,7 @@ import auth from "./handlers/auth.handler.js";
 import profile from "./handlers/profile.handler.js";
 import { handle } from "@hono/node-server/vercel";
 import revenueRoute from "./handlers/revenue.handler.js";
+import rateRoute from "./handlers/rate.handler.js";
 
 const app = new Hono();
 
@@ -20,6 +21,7 @@ app.route("/auth", auth);
 v1.route("/parking", parking);
 v1.route("/profile", profile);
 v1.route("/revenue", revenueRoute);
+v1.route("/rate", rateRoute);
 
 app.route("/api/v1", v1);
 
