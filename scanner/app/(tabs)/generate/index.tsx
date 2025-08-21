@@ -43,7 +43,6 @@ export default function TicketGenerator() {
         },
         onError: (error) => {
             console.error('Failed to create ticket:', error);
-            // Reset isPWD to false even on error
             setIsPWD(false);
         },
     });
@@ -82,7 +81,7 @@ export default function TicketGenerator() {
     const handleGeneratePayFirstTicket = () => {
         if (!user) return null;
 
-        const fee = isPWD ? 0 : 30;
+        const fee = isPWD ? 0 : 20;
 
         createPaidTicket.mutate({
             totalFee: fee,
@@ -161,7 +160,7 @@ export default function TicketGenerator() {
             const vehicleIcon = '🏍️';
             const entryTimeFormatted = dayjs().format('h:mm:ss A');
             const exitTimeFormatted = dayjs().format('h:mm:ss A');
-            const totalFee = isPWD === true ? 0 : 30;
+            const totalFee = isPWD === true ? 0 : 20;
 
             // Create the parking receipt text command
             const text =

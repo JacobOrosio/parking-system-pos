@@ -17,6 +17,7 @@ import duration from 'dayjs/plugin/duration';
 import { payParking } from '@/api/mutations/parking';
 import { useSession } from '@/context/ctx';
 import { useDatabase } from '@/hooks/useDatabase';
+import { getRate } from '@/api/queries/rate';
 
 dayjs.extend(duration);
 
@@ -50,6 +51,14 @@ export default function TicketScanner() {
             return result;
         },
         enabled: false,
+    });
+
+    const { data: rate, isLoading: isLoadingRate } = useQuery({
+        queryKey: ['getRate'],
+        queryFn: async () => {
+            const result = await getRate();
+            return result;
+        },
     });
 
     const payTicket = useMutation({
@@ -137,7 +146,7 @@ export default function TicketScanner() {
         const { vehicleType, entryTime } = ticketData;
         const { diffInMinutes } = getDuration(entryTime);
 
-        const gracePeriod = 15; // 15 minutes
+        const gracePeriod = rate?.gracePeriod;
         const baseMinutes = 180; // 3 hours
 
         if (diffInMinutes <= gracePeriod) {
@@ -151,19 +160,19 @@ export default function TicketScanner() {
             const extraMinutes = diffInMinutes - (baseMinutes + gracePeriod);
             const fullExtraHours = Math.floor(extraMinutes / 60);
             const minutesIntoCurrentBlock = extraMinutes % 60;
-            let totalFee = fullExtraHours * 20;
+            let totalFee = fullExtraHours * rate?.extraPerHour;
             if (minutesIntoCurrentBlock > 0) {
-                totalFee += 20;
+                totalFee += rate?.extraPerHour;
             }
             return totalFee;
         }
 
         if (vehicleType === 'motorcycle') {
-            return 30;
+            return 20;
         }
 
-        const baseRate = 30;
-        const extraHourRate = 20;
+        const baseRate = rate?.baseRate;
+        const extraHourRate = rate?.extraPerHour;
         const hoursInDay = 24;
         const minutesInDay = hoursInDay * 60;
         const dailyFee = 500;
@@ -391,7 +400,7 @@ export default function TicketScanner() {
                         </View>
 
                         <View className="px-6 py-6">
-                            {isLoading || isProgress ? (
+                            {isLoading && isProgress && isLoadingRate ? (
                                 <View className="items-center py-8">
                                     <ActivityIndicator
                                         size="large"
