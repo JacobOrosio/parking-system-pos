@@ -129,9 +129,6 @@ export default function TicketGenerator() {
                 'Date: ' +
                 currentDate +
                 '\n' +
-                'Vehicle Type: ' +
-                vehicleTypeDisplay +
-                '\n' +
                 'Entry Time: ' +
                 entryTimeFormatted +
                 '\n' +
@@ -143,9 +140,6 @@ export default function TicketGenerator() {
                 '\x1B\x61\x01' + // Center alignment for QR code
                 qrCodeCommand + // Add QR code
                 '\n\n' + // Space after QR code
-                '\x1B\x61\x00' + // Reset to left alignment
-                '\n' +
-                'Thank you for parking with us!\n' +
                 '================================\n' +
                 '\x1D\x56\x41\x03'; // Cut paper
 

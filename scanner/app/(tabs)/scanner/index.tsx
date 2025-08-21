@@ -215,26 +215,10 @@ export default function TicketScanner() {
                 '\x1B\x61\x01' +
                 '================================\n' +
                 '\x1B\x21\x10' +
-                'PARKING RECEIPT\n' +
+                'NOVAPARKING RECEIPT\n' +
                 '\x1B\x21\x00' +
                 '================================\n' +
-                'Date: ' +
-                currentDate +
-                '\n' +
-                'Time: ' +
-                currentTime +
-                '\n' +
-                'Receipt ID: ' +
-                ticketId +
-                '\n' +
-                (isPWDDiscount ? 'Discount: PWD/Senior Citizen\n' : '') +
-                '================================\n' +
                 '\x1B\x61\x00' +
-                'Vehicle Type: ' +
-                vehicleIcon +
-                ' ' +
-                ticketData.vehicleType +
-                '\n' +
                 'Entry Time: ' +
                 entryTimeFormatted +
                 '\n' +
@@ -254,10 +238,6 @@ export default function TicketScanner() {
                 '\n' +
                 '\x1B\x21\x00' +
                 '================================\n' +
-                '\x1B\x61\x00' +
-                'Payment Status: PAID\n' +
-                'Payment Method: Cash\n' +
-                '\x1B\x61\x01' +
                 'Thank you for parking with us!\n' +
                 'Please come again.\n' +
                 '\x1D\x56\x41\x03';
