@@ -8,17 +8,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      UserRole
-  status    String   @default("active")  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  logs      ParkingLog[] @relation("CheckedOutLogs")
-  tickets   ParkingTicket[] @relation("IssuedTickets")
-  transactionSessions UserTransactionSession[] 
+  id                  String                   @id @default(uuid())
+  name                String
+  email               String                   @unique
+  password            String
+  role                UserRole
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  status              String                   @default("active")
+  logs                ParkingLog[]             @relation("CheckedOutLogs")
+  tickets             ParkingTicket[]          @relation("IssuedTickets")
+  transactionSessions UserTransactionSession[]
 }
 
 model ParkingTicket {
@@ -30,10 +30,9 @@ model ParkingTicket {
   checkedOut   Boolean     @default(false)
   issuedById   String
   vehicleType  String
-  isPWD        Boolean?     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
-
+  isPWD        Boolean?    @default(false)
   log          ParkingLog?
   issuedBy     User        @relation("IssuedTickets", fields: [issuedById], references: [id])
 }
@@ -46,22 +45,19 @@ model ParkingLog {
   checkedOutById String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-
   checkedOutBy   User          @relation("CheckedOutLogs", fields: [checkedOutById], references: [id])
   ticket         ParkingTicket @relation(fields: [ticketId], references: [id])
 }
 
 model UserTransactionSession {
-  id               String   @id @default(uuid())
-  userId           String
-  totalAmount      Float
-  sessionDate      DateTime @default(now())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  user             User     @relation(fields: [userId], references: [id])
+  id          String   @id @default(uuid())
+  userId      String
+  totalAmount Float
+  sessionDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
 }
-
 
 model Rate {
   id           String   @id @default(uuid())
@@ -72,6 +68,7 @@ model Rate {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  baseTime     Int?
 }
 
 enum UserRole {

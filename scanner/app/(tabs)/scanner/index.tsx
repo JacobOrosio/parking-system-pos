@@ -147,7 +147,7 @@ export default function TicketScanner() {
         const { diffInMinutes } = getDuration(entryTime);
 
         const gracePeriod = rate?.gracePeriod;
-        const baseMinutes = 180; // 3 hours
+        const baseMinutes = rate?.baseTime;
 
         if (diffInMinutes <= gracePeriod) {
             return 0;
