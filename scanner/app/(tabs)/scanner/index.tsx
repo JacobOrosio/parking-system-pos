@@ -18,6 +18,7 @@ import { payParking } from '@/api/mutations/parking';
 import { useSession } from '@/context/ctx';
 import { useDatabase } from '@/hooks/useDatabase';
 import { getRate } from '@/api/queries/rate';
+import { DAILY_VEHICLE_RATE } from '@/utils/parking-rates';
 
 dayjs.extend(duration);
 
@@ -168,14 +169,14 @@ export default function TicketScanner() {
         }
 
         if (vehicleType === 'motorcycle') {
-            return 20;
+            return 30;
         }
 
         const baseRate = rate?.baseRate;
         const extraHourRate = rate?.extraPerHour;
         const hoursInDay = 24;
         const minutesInDay = hoursInDay * 60;
-        const dailyFee = 500;
+        const dailyFee = DAILY_VEHICLE_RATE;
 
         const fullDays = Math.floor(diffInMinutes / minutesInDay);
 

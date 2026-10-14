@@ -11,7 +11,6 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
 import dayjs from 'dayjs';
 import { useMutation } from '@tanstack/react-query';
 import { customerParking, payFirstParking, userTransaction } from '@/api/mutations/parking';
@@ -81,7 +80,7 @@ export default function TicketGenerator() {
     const handleGeneratePayFirstTicket = () => {
         if (!user) return null;
 
-        const fee = isPWD ? 0 : 20;
+        const fee = isPWD ? 0 : 30;
 
         createPaidTicket.mutate({
             totalFee: fee,
