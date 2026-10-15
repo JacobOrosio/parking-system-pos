@@ -61,7 +61,7 @@ export default function TicketScanner() {
             return result;
         },
     });
-
+    console.log('Rate data:', rate);
     const payTicket = useMutation({
         mutationFn: payParking,
         onSuccess: async () => {
@@ -149,6 +149,7 @@ export default function TicketScanner() {
 
         const gracePeriod = rate?.gracePeriod;
         const baseMinutes = rate?.baseTime;
+        const baseRate = rate?.baseRate;
 
         if (diffInMinutes <= gracePeriod) {
             return 0;
@@ -169,10 +170,9 @@ export default function TicketScanner() {
         }
 
         if (vehicleType === 'motorcycle') {
-            return 30;
+            return baseRate;
         }
 
-        const baseRate = rate?.baseRate;
         const extraHourRate = rate?.extraPerHour;
         const hoursInDay = 24;
         const minutesInDay = hoursInDay * 60;

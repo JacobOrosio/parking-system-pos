@@ -12,11 +12,12 @@ import {
     Platform,
 } from 'react-native';
 import dayjs from 'dayjs';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { customerParking, payFirstParking, userTransaction } from '@/api/mutations/parking';
 import { useSession } from '@/context/ctx';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useDatabase } from '@/hooks/useDatabase';
+import { getRate } from '@/api/queries/rate';
 
 export default function TicketGenerator() {
     const { user, signOut } = useSession();
@@ -29,6 +30,11 @@ export default function TicketGenerator() {
     ];
 
     const { requestLogoutWithPrint, addTransaction, getTotalTransactions } = useDatabase();
+
+    const { data: rate, isLoading: isLoadingRate } = useQuery({
+        queryKey: ['getRate'],
+        queryFn: getRate,
+    });
 
     const createTicket = useMutation({
         mutationFn: customerParking,
@@ -51,7 +57,7 @@ export default function TicketGenerator() {
         onSuccess: async (data) => {
             console.log(data.ticket.log.feeCharged);
             await addTransaction(data.ticket.log.feeCharged);
-            await handlePrintReceipt();
+            await handlePrintReceipt(data.ticket.log.feeCharged);
         },
         onError: (error) => {
             console.error('Failed to create ticket:', error);
@@ -80,7 +86,9 @@ export default function TicketGenerator() {
     const handleGeneratePayFirstTicket = () => {
         if (!user) return null;
 
-        const fee = isPWD ? 0 : 30;
+        if (!rate) return;
+
+        const fee = isPWD ? 0 : rate.baseRate;
 
         createPaidTicket.mutate({
             totalFee: fee,
@@ -152,15 +160,13 @@ export default function TicketGenerator() {
         }
     };
 
-    const handlePrintReceipt = async () => {
+    const handlePrintReceipt = async (totalFee: number) => {
         try {
             const currentDate = new Date().toLocaleDateString();
             const currentTime = new Date().toLocaleTimeString();
             const vehicleIcon = '🏍️';
             const entryTimeFormatted = dayjs().format('h:mm:ss A');
             const exitTimeFormatted = dayjs().format('h:mm:ss A');
-            const totalFee = isPWD === true ? 0 : 20;
-
             // Create the parking receipt text command
             const text =
                 '\x1B\x40' + // Initialize printer
@@ -285,7 +291,12 @@ export default function TicketGenerator() {
                             <View className="mb-4">
                                 <TouchableOpacity
                                     onPress={handleGeneratePayFirstTicket}
-                                    className="py-4 px-4 rounded-xl border-2  border-gray-200">
+                                    disabled={createPaidTicket.isPending || isLoadingRate || !rate}
+                                    className={`py-4 px-4 rounded-xl border-2 border-gray-200 ${
+                                        createPaidTicket.isPending || isLoadingRate || !rate
+                                            ? 'bg-gray-100'
+                                            : 'bg-white'
+                                    }`}>
                                     <View className="flex-row items-center justify-center ">
                                         <Text className="text-lg mr-2">🏍️</Text>
                                         <Text className="font-semibold text-base text-gray-600">
